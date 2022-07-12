@@ -1,14 +1,17 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
-
+    constructor(private prisma: PrismaService) {}
+      
     login() {
-        return {message: 'Logged in successfully'}
+        
+        return 'Logged in successfully'
     }
     
-    register() {
-        return {message: 'Successfully signed up'}
+    register():string {
+        return 'Successfully signed up'
     }
 }
