@@ -1,26 +1,40 @@
 /* eslint-disable prettier/prettier */
-import { ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable} from '@nestjs/common';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LoginDto, RegisterDto } from './dto/Dto';
 import * as argon from 'argon2'
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 
 
 @Injectable()
 export class AuthService {
-    constructor(private prisma: PrismaService, private configService:ConfigService) { }
+    constructor(
+        private prisma: PrismaService,
+        private configService: ConfigService,
+        private jwt: JwtService
+    ) { }
     
       
-    async login(loginData: LoginDto) {
+    async validateUser(loginData: LoginDto): Promise<Omit<User, "password" | null>> {
         const user = await this.prisma.user.findFirst({ where: { email: loginData.email } });
-        if (!user) throw new NotFoundException({ message: 'Email or password does not exist' });
-        const verifyPassword = await argon.verify(user.password, loginData.password);
-        if (!verifyPassword) throw new UnauthorizedException({ message: 'Email or password does not exist' });
-        console.log('Successfully logged in ')
+        
+        if (user) {
+              const verifyPassword = await argon.verify(user.password, loginData.password);
+            if (verifyPassword) {
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                  const { password, ...rest } = user;
+                 return rest;
+            }
+          
+        }
+        return null  //{ access_token: await this.signToken(user.id, user.email) }
     }
     
-    async register(data:RegisterDto):Promise<Omit<User, 'password'>> {
+
+
+    async register(data: RegisterDto): Promise<{access_token:string}> {
          
         const hash = await argon.hash(data.password);
 
@@ -36,7 +50,9 @@ export class AuthService {
             
             }
             }); 
-            return user
+            return {
+                access_token : await this.signToken(user.id, user.email)
+            }
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError) {
                 if (error.code === 'P2002') {
@@ -46,5 +62,15 @@ export class AuthService {
         }
        
         
+    }
+
+    async signToken(userId: string, email: string): Promise<string> {
+        const payload = { sub: userId, email: email };
+        const token = await this.jwt.signAsync(payload,
+            {
+                expiresIn: '15m',
+                secret: this.configService.get('JWT_SECRET')
+            });
+        return token;
     }
 }
