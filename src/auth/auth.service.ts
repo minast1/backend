@@ -34,7 +34,7 @@ export class AuthService {
     
 
 
-    async register(data: RegisterDto): Promise<{access_token:string}> {
+    async register(data: RegisterDto): Promise<{id:string, email:string}> {
          
         const hash = await argon.hash(data.password);
 
@@ -50,9 +50,8 @@ export class AuthService {
             
             }
             }); 
-            return {
-                access_token : await this.signToken(user.id, user.email)
-            }
+              
+            return user;
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError) {
                 if (error.code === 'P2002') {
@@ -64,13 +63,14 @@ export class AuthService {
         
     }
 
-    async signToken(userId: string, email: string): Promise<string> {
-        const payload = { sub: userId, email: email };
-        const token = await this.jwt.signAsync(payload,
-            {
-                expiresIn: '15m',
-                secret: this.configService.get('JWT_SECRET')
-            });
-        return token;
+    async signToken(user:{email:string, id:string}): Promise<{access_token: string}> {
+        const payload = { sub: user.id, email:user.email };
+        const token = await this.jwt.signAsync(payload)
+          
+        return {
+            access_token: token
+        };
     }
+
+   
 }

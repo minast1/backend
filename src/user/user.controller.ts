@@ -6,8 +6,8 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
   Request,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,8 +24,9 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get()
+  @Get('profile')
   findAll(@Request() req) {
+    console.log(req.user);
     return req.user; //this.userService.findAll();
   }
 

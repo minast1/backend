@@ -12,11 +12,12 @@ export class AuthController {
     @UseGuards(LocalAuthGuard)
     @Post('login')
     async login(@Request() req) {
-        return req.user// return this.authService.validateUser(loginData)
+         return this.authService.signToken(req.user)
     }
     
     @Post('register')
-    register(@Body() registerData: RegisterDto ) {
-       return this.authService.register(registerData)
+    async register(@Body() registerData: RegisterDto ) {
+        const user = await this.authService.register(registerData);
+        return this.authService.signToken(user);
     }
 }
